@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/pokemonListFragment"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="Pokémon" />
+
+    <item
+        android:id="@+id/captureFragment"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Capturar" />
+
+    <item
+        android:id="@+id/pokedexFragment"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Pokédex" />
+
+    <item
+        android:id="@+id/settingsFragment"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Ajustes" />
+
+</menu>

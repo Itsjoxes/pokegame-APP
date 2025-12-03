@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/pokemonListFragment">
+
+    <fragment
+        android:id="@+id/pokemonListFragment"
+        android:name="com.example.pokegame.ui.PokemonListFragment"
+        android:label="Pokémon"
+        tools:layout="@layout/fragment_pokemon_list">
+        <action
+            android:id="@+id/action_pokemonListFragment_to_pokemonDetailFragment"
+            app:destination="@id/pokemonDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/pokemonDetailFragment"
+        android:name="com.example.pokegame.ui.PokemonDetailFragment"
+        android:label="Detalle"
+        tools:layout="@layout/fragment_pokemon_detail">
+        <argument
+            android:name="pokemonId"
+            app:argType="integer" />
+    </fragment>
+    <fragment
+        android:id="@+id/pokedexFragment"
+        android:name="com.example.pokegame.ui.PokedexFragment"
+        android:label="Pokédex"
+        tools:layout="@layout/fragment_pokedex">
+        <action
+            android:id="@+id/action_pokedexFragment_to_battleFragment"
+            app:destination="@id/battleFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/shopFragment"
+        android:name="com.example.pokegame.ui.ShopFragment"
+        android:label="Tienda"
+        tools:layout="@layout/fragment_shop" />
+    <fragment
+        android:id="@+id/captureFragment"
+        android:name="com.example.pokegame.ui.CaptureFragment"
+        android:label="Capturar"
+        tools:layout="@layout/fragment_capture" />
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.pokegame.ui.SettingsFragment"
+        android:label="Ajustes"
+        tools:layout="@layout/fragment_settings">
+        <action
+            android:id="@+id/action_settingsFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.pokegame.ui.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login" />
+    <fragment
+        android:id="@+id/battleFragment"
+        android:name="com.example.pokegame.ui.BattleFragment"
+        android:label="Batalla"
+        tools:layout="@layout/fragment_battle">
+        <argument
+            android:name="rivalId"
+            app:argType="integer" />
+    </fragment>
+</navigation>

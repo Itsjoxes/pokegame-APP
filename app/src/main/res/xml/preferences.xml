@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Cuenta">
+        <Preference
+            app:key="account_action"
+            app:title="Iniciar Sesión"
+            app:summary="Inicia sesión o regístrate para guardar tu progreso." />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Recursos">
+
+        <Preference
+            app:key="download_sprites"
+            app:title="Descargar Recursos"
+            app:summary="Descarga todas las imágenes para un uso más rápido y sin conexión." />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Personalización">
+
+        <ListPreference
+            app:key="app_theme"
+            app:title="Tema de Color"
+            app:summary="Elige el color principal de la aplicación."
+            app:entries="@array/theme_entries"
+            app:entryValues="@array/theme_values"
+            app:defaultValue="default" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Accesibilidad">
+
+        <SwitchPreferenceCompat
+            app:key="large_text"
+            app:title="Texto más Grande"
+            app:summary="Aumenta el tamaño de la fuente en toda la aplicación." />
+
+        <SwitchPreferenceCompat
+            app:key="high_contrast"
+            app:title="Alto Contraste"
+            app:summary="Mejora la legibilidad para personas con baja visión." />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
