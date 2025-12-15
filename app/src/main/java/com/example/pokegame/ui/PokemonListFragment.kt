@@ -6,13 +6,13 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.core.os.bundleOf
-import androidx.navigation.fragment.findNavController
-import android.widget.TextView
 import com.example.pokegame.R
 import com.example.pokegame.api.RetrofitClient
 import com.example.pokegame.databinding.FragmentPokemonListBinding
@@ -24,7 +24,8 @@ import com.example.pokegame.repository.PokemonRepository
 class PokemonListFragment : Fragment() {
 
     private var _binding: FragmentPokemonListBinding? = null
-    private val binding get() = _binding!!
+    private val binding
+        get() = _binding!!
 
     private lateinit var adapter: PokeListAdapter
     private lateinit var viewModel: PokeListViewModel
@@ -34,9 +35,9 @@ class PokemonListFragment : Fragment() {
     private var errorRunnable: Runnable? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View {
         _binding = FragmentPokemonListBinding.inflate(inflater, container, false)
         return binding.root
@@ -45,8 +46,13 @@ class PokemonListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val repository = PokemonRepository(RetrofitClient.service)
-        val factory = PokeListViewModelFactory(repository)
+        val repository =
+                PokemonRepository(
+                        RetrofitClient.service,
+                        com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+                )
+        val sessionManager = com.example.pokegame.util.SessionManager(requireContext())
+        val factory = PokeListViewModelFactory(repository, sessionManager)
         viewModel = ViewModelProvider(this, factory)[PokeListViewModel::class.java]
 
         setupRecyclerView()
@@ -59,15 +65,15 @@ class PokemonListFragment : Fragment() {
         observeViewModel()
 
         // Show error message if loading takes too long
-        errorRunnable = Runnable {
-            if (adapter.itemCount == 0) {
-                binding.loadingOverlay.visibility = View.GONE
-                binding.loadingProgress.visibility = View.GONE
-                errorMessage.visibility = View.VISIBLE
-            }
-        }.also {
-            handler.postDelayed(it, 25000)
-        }
+        errorRunnable =
+                Runnable {
+                    if (adapter.itemCount == 0) {
+                        binding.loadingOverlay.visibility = View.GONE
+                        binding.loadingProgress.visibility = View.GONE
+                        errorMessage.visibility = View.VISIBLE
+                    }
+                }
+                        .also { handler.postDelayed(it, 25000) }
 
         // Load initial data
         viewModel.loadNextPage()
@@ -76,41 +82,45 @@ class PokemonListFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = PokeListAdapter { id ->
             val args = bundleOf("pokemonId" to id)
-            findNavController().navigate(R.id.action_pokemonListFragment_to_pokemonDetailFragment, args)
+            findNavController()
+                    .navigate(R.id.action_pokemonListFragment_to_pokemonDetailFragment, args)
         }
 
         val layoutManager = GridLayoutManager(requireContext(), 2)
 
         // loading item ocupa 2 columnas
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return if (adapter.getItemViewType(position) == 1) 2 else 1
-            }
-        }
+        layoutManager.spanSizeLookup =
+                object : GridLayoutManager.SpanSizeLookup() {
+                    override fun getSpanSize(position: Int): Int {
+                        return if (adapter.getItemViewType(position) == 1) 2 else 1
+                    }
+                }
 
         binding.pokemonRecycler.layoutManager = layoutManager
         binding.pokemonRecycler.adapter = adapter
 
-        binding.pokemonRecycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
+        binding.pokemonRecycler.addOnScrollListener(
+                object : RecyclerView.OnScrollListener() {
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        super.onScrolled(recyclerView, dx, dy)
 
-                // Only trigger when user scrolls downwards to avoid immediate
-                // auto-loading after submitList() which can cause repeated loads
-                // and visual flicker.
-                if (dy <= 0) return
+                        // Only trigger when user scrolls downwards to avoid immediate
+                        // auto-loading after submitList() which can cause repeated loads
+                        // and visual flicker.
+                        if (dy <= 0) return
 
-                val lastVisible = layoutManager.findLastVisibleItemPosition()
-                val total = layoutManager.itemCount
-                val threshold = 4
+                        val lastVisible = layoutManager.findLastVisibleItemPosition()
+                        val total = layoutManager.itemCount
+                        val threshold = 4
 
-                val isLoading = viewModel.isLoading.value ?: false
+                        val isLoading = viewModel.isLoading.value ?: false
 
-                if (!isLoading && lastVisible >= total - threshold) {
-                    viewModel.loadNextPage()
+                        if (!isLoading && lastVisible >= total - threshold) {
+                            viewModel.loadNextPage()
+                        }
+                    }
                 }
-            }
-        })
+        )
     }
 
     private fun observeViewModel() {

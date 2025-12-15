@@ -4,11 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.pokegame.R
 import com.example.pokegame.api.LoginRequest
 import com.example.pokegame.api.UserRetrofitClient
 import com.example.pokegame.api.Usuario
@@ -61,6 +63,8 @@ class LoginFragment : Fragment() {
                 performAction()
             }
         }
+
+        binding.tvChangePassword.setOnClickListener { showChangePasswordDialog() }
     }
 
     private fun updateModeUI() {
@@ -148,7 +152,11 @@ class LoginFragment : Fragment() {
                     if (response.isSuccessful && response.body() != null) {
                         val token = response.body()!!.token
                         sessionManager.saveToken(token)
-                        sessionManager.saveSession(username, password) // Keep saving username/password if needed for other things, or just username
+                        sessionManager.saveSession(
+                                username,
+                                password
+                        ) // Keep saving username/password if needed for other things, or just
+                        // username
                         Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT)
                                 .show()
                         findNavController().popBackStack()
@@ -164,24 +172,25 @@ class LoginFragment : Fragment() {
                                             )
                                             .show()
                             401 -> {
-                                    val errorMsg = response.errorBody()?.string() ?: "Credenciales inválidas"
-                                    AlertDialog.Builder(requireContext())
+                                val errorMsg =
+                                        response.errorBody()?.string() ?: "Credenciales inválidas"
+                                AlertDialog.Builder(requireContext())
                                         .setTitle("Error 401")
                                         .setMessage(errorMsg)
                                         .setPositiveButton("OK", null)
                                         .show()
                             }
                             403 -> {
-                                    val errorMsg = response.errorBody()?.string() ?: "Acceso denegado"
-                                    AlertDialog.Builder(requireContext())
+                                val errorMsg = response.errorBody()?.string() ?: "Acceso denegado"
+                                AlertDialog.Builder(requireContext())
                                         .setTitle("Error 403")
                                         .setMessage(errorMsg)
                                         .setPositiveButton("OK", null)
                                         .show()
                             }
                             else -> {
-                                    val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
-                                    AlertDialog.Builder(requireContext())
+                                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                                AlertDialog.Builder(requireContext())
                                         .setTitle("Error ${response.code()}")
                                         .setMessage(errorMsg)
                                         .setPositiveButton("OK", null)
@@ -215,8 +224,8 @@ class LoginFragment : Fragment() {
                                             )
                                             .show()
                             else -> {
-                                    val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
-                                    AlertDialog.Builder(requireContext())
+                                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                                AlertDialog.Builder(requireContext())
                                         .setTitle("Error registro ${response.code()}")
                                         .setMessage(errorMsg)
                                         .setPositiveButton("OK", null)
@@ -235,6 +244,82 @@ class LoginFragment : Fragment() {
             } finally {
                 binding.progressBar.visibility = View.GONE
                 binding.btnAction.isEnabled = true
+            }
+        }
+    }
+
+    private fun showChangePasswordDialog() {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_change_password, null)
+        val etUsername = dialogView.findViewById<EditText>(R.id.etUsername)
+        val etOldPassword = dialogView.findViewById<EditText>(R.id.etOldPassword)
+        val etNewPassword = dialogView.findViewById<EditText>(R.id.etNewPassword)
+
+        AlertDialog.Builder(requireContext())
+                .setTitle("Cambiar contraseña")
+                .setView(dialogView)
+                .setPositiveButton("Actualizar") { _, _ ->
+                    val username = etUsername.text.toString().trim()
+                    val oldPassword = etOldPassword.text.toString().trim()
+                    val newPassword = etNewPassword.text.toString().trim()
+
+                    if (username.isNotEmpty() && oldPassword.isNotEmpty() && newPassword.isNotEmpty()) {
+                        performChangePassword(username, oldPassword, newPassword)
+                    } else {
+                        Toast.makeText(context, "Todos los campos son requeridos", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+    }
+
+    private fun performChangePassword(username: String, oldPass: String, newPass: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            try {
+                // 1. Authenticate with old password to get the token
+                val authService = UserRetrofitClient.getInstance(requireContext())
+                val loginResponse = authService.login(LoginRequest(username, oldPass))
+
+                if (loginResponse.isSuccessful && loginResponse.body() != null) {
+                    // 2. Authentication successful, save the token
+                    val token = loginResponse.body()!!.token
+                    sessionManager.saveToken(token)
+
+                    // Create a new instance of the service to ensure the interceptor uses the new token
+                    val service = UserRetrofitClient.getInstance(requireContext())
+
+                    // 3. Get the complete user object
+                    val userResponse = service.getUsuarioByUsername(username)
+
+                    if (userResponse.isSuccessful && userResponse.body() != null) {
+                        val existingUser = userResponse.body()!!
+
+                        // 4. Create a copy of the user with the new password
+                        val updatedUser = existingUser.copy(contrasena = newPass)
+
+                        // 5. Update the user with the complete object
+                        val updateResponse = service.updateUsuario(updatedUser)
+
+                        if (updateResponse.isSuccessful && updateResponse.body() != null) {
+                            Toast.makeText(requireContext(), "Contraseña actualizada con éxito", Toast.LENGTH_SHORT).show()
+                            // 6. Save the new credentials in the session
+                            sessionManager.saveSession(username, newPass)
+                        } else {
+                            val errorMsg = updateResponse.errorBody()?.string() ?: "Error al actualizar la contraseña"
+                            Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        val errorMsg = userResponse.errorBody()?.string() ?: "No se pudo obtener la información del usuario"
+                        Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    // Authentication failed
+                    Toast.makeText(requireContext(), "Error de autenticación: Verifique su usuario y contraseña anterior", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error de conexión: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
             }
         }
     }

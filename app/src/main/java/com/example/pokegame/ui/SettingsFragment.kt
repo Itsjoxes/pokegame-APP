@@ -27,7 +27,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         sessionManager = SessionManager(requireContext())
 
         val application = requireActivity().application
-        val repository = PokemonRepository(RetrofitClient.service)
+        val userService = com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+        val repository = PokemonRepository(RetrofitClient.service, userService)
         val factory = SettingsViewModelFactory(application, repository)
         viewModel = ViewModelProvider(this, factory).get(SettingsViewModel::class.java)
 
@@ -101,15 +102,100 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 true
             }
         }
+
+        // Profile Picture Logic
+        val profilePicPreference: Preference? = findPreference("profile_picture")
+        profilePicPreference?.setOnPreferenceClickListener {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                            requireContext(),
+                            android.Manifest.permission.CAMERA
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                takePictureLauncher.launch(null)
+            } else {
+                requestCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+            }
+            true
+        }
     }
+
+    private val takePictureLauncher =
+            registerForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.TakePicturePreview()
+            ) { bitmap ->
+                if (bitmap != null) {
+                    // Save bitmap to internal storage
+                    try {
+                        val filename = "profile_pic.png"
+                        val stream =
+                                requireContext()
+                                        .openFileOutput(
+                                                filename,
+                                                android.content.Context.MODE_PRIVATE
+                                        )
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+                        stream.close()
+                        Toast.makeText(
+                                        requireContext(),
+                                        "¡Foto de perfil guardada!",
+                                        Toast.LENGTH_SHORT
+                                )
+                                .show()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                                        requireContext(),
+                                        "Error al guardar la foto",
+                                        Toast.LENGTH_SHORT
+                                )
+                                .show()
+                    }
+                }
+            }
+
+    private val requestCameraPermissionLauncher =
+            registerForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    takePictureLauncher.launch(null)
+                } else {
+                    Toast.makeText(
+                                    requireContext(),
+                                    "Permiso de cámara necesario",
+                                    Toast.LENGTH_SHORT
+                            )
+                            .show()
+                }
+            }
 
     private fun showLogoutConfirmation() {
         AlertDialog.Builder(requireContext())
                 .setTitle("Cerrar Sesión")
                 .setMessage("¿Estás seguro de que quieres cerrar sesión?")
                 .setPositiveButton("Sí") { _, _ ->
+                    // Clear Session
                     sessionManager.clearSession()
-                    Toast.makeText(requireContext(), "Sesión cerrada", Toast.LENGTH_SHORT).show()
+
+                    // Clear Captured Pokemon (Local)
+                    com.example.pokegame.util.CapturedPokemonManager.clear()
+
+                    // Clear Pokeballs
+                    requireContext()
+                            .getSharedPreferences(
+                                    "pokegame_prefs",
+                                    android.content.Context.MODE_PRIVATE
+                            )
+                            .edit()
+                            .clear()
+                            .apply()
+
+                    Toast.makeText(
+                                    requireContext(),
+                                    "Sesión cerrada y datos locales borrados",
+                                    Toast.LENGTH_SHORT
+                            )
+                            .show()
                     setupAccountPreference()
                 }
                 .setNegativeButton("No", null)

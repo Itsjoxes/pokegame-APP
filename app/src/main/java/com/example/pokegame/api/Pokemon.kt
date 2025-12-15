@@ -5,13 +5,13 @@ import com.google.gson.annotations.SerializedName
 
 data class Pokemon(
         @Expose @SerializedName("id") val id: Int,
-        @Expose @SerializedName("name") val name: String,
+        @Expose @SerializedName(value = "nombre", alternate = ["name"]) val name: String,
         @Expose @SerializedName("base_experience") val baseExperience: Int,
         @Expose @SerializedName("height") val height: Int,
         @Expose @SerializedName("is_default") val isDefault: Boolean,
         @Expose @SerializedName("order") val order: Int,
         @Expose @SerializedName("weight") val weight: Int,
-        @Expose @SerializedName("sprites") val sprites: Sprites,
+        @Expose @SerializedName("sprites") val sprites: Sprites?,
         @Expose @SerializedName("abilities") val abilities: List<Ability>,
         @Expose @SerializedName("forms") val forms: List<Form>,
         @Expose @SerializedName("game_indices") val gameIndices: List<GameIndex>,
@@ -32,7 +32,9 @@ data class Pokemon(
 
         // added property for the Spanish flavor text entries
         var spanishFlavorTextEntries: List<String> = emptyList(),
-        @Expose @SerializedName("urlImagen") var urlImagen: String? = null
+        @Expose @SerializedName("urlImagen") var urlImagen: String? = null,
+        var latitude: Double? = null,
+        var longitude: Double? = null
 )
 
 data class FlavorTextEntry(

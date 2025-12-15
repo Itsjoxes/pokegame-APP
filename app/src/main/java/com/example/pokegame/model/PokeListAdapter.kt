@@ -27,7 +27,8 @@ sealed class UiModel {
     object LoadingItem : UiModel()
 }
 
-class PokeListAdapter(private val pokemonClick: (Int) -> Unit) : ListAdapter<UiModel, RecyclerView.ViewHolder>(UiModelDiffCallback()) {
+class PokeListAdapter(private val pokemonClick: (Int) -> Unit) :
+        ListAdapter<UiModel, RecyclerView.ViewHolder>(UiModelDiffCallback()) {
 
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
@@ -39,10 +40,16 @@ class PokeListAdapter(private val pokemonClick: (Int) -> Unit) : ListAdapter<UiM
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == VIEW_TYPE_POKEMON) {
-            val binding = PokeListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            val binding =
+                    PokeListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             PokemonViewHolder(binding)
         } else {
-            val binding = ItemLoadingIndicatorBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            val binding =
+                    ItemLoadingIndicatorBinding.inflate(
+                            LayoutInflater.from(parent.context),
+                            parent,
+                            false
+                    )
             LoadingViewHolder(binding)
         }
     }
@@ -54,9 +61,10 @@ class PokeListAdapter(private val pokemonClick: (Int) -> Unit) : ListAdapter<UiM
         }
     }
 
-    class PokemonViewHolder(private val binding: PokeListBinding) : RecyclerView.ViewHolder(binding.root) {
+    class PokemonViewHolder(private val binding: PokeListBinding) :
+            RecyclerView.ViewHolder(binding.root) {
         fun bind(pokemon: Pokemon, pokemonClick: (Int) -> Unit) {
-            binding.pokemonName.text = pokemon.name.uppercase()
+            binding.pokemonName.text = (pokemon.name ?: "Desconocido").uppercase()
             binding.pokemonName.setTypeface(null, Typeface.BOLD)
 
             // Set rarity border
@@ -64,42 +72,60 @@ class PokeListAdapter(private val pokemonClick: (Int) -> Unit) : ListAdapter<UiM
             binding.card.strokeColor = ContextCompat.getColor(itemView.context, borderColor)
 
             binding.typesContainer.removeAllViews()
-            pokemon.types.forEach { pokemonType ->
-                val typeTextView = TextView(itemView.context).apply {
-                    text = pokemonType.type.name.take(3).uppercase()
-                    
-                    val typeface = ResourcesCompat.getFont(context, R.font.jersey_10)
-                    setTypeface(typeface, Typeface.BOLD)
-                    
-                    setTextColor(Color.WHITE)
-                    letterSpacing = 0.1f // Add letter spacing
+            pokemon.types?.forEach { pokemonType ->
+                val typeTextView =
+                        TextView(itemView.context).apply {
+                            text = pokemonType.type.name.take(3).uppercase()
 
-                    val backgroundDrawable = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        setColor(ContextCompat.getColor(context, TypeColorMapper.getColorForType(pokemonType.type.name)))
-                    }
-                    background = backgroundDrawable
+                            val typeface = ResourcesCompat.getFont(context, R.font.jersey_10)
+                            setTypeface(typeface, Typeface.BOLD)
 
-                    val paddingHorizontal = (8 * resources.displayMetrics.density).toInt()
-                    val paddingVertical = (4 * resources.displayMetrics.density).toInt()
-                    setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical)
-                    val margin = (4 * resources.displayMetrics.density).toInt()
-                    layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                        rightMargin = margin
-                    }
-                }
+                            setTextColor(Color.WHITE)
+                            letterSpacing = 0.1f // Add letter spacing
+
+                            val backgroundDrawable =
+                                    GradientDrawable().apply {
+                                        shape = GradientDrawable.RECTANGLE
+                                        setColor(
+                                                ContextCompat.getColor(
+                                                        context,
+                                                        TypeColorMapper.getColorForType(
+                                                                pokemonType.type.name
+                                                        )
+                                                )
+                                        )
+                                    }
+                            background = backgroundDrawable
+
+                            val paddingHorizontal = (8 * resources.displayMetrics.density).toInt()
+                            val paddingVertical = (4 * resources.displayMetrics.density).toInt()
+                            setPadding(
+                                    paddingHorizontal,
+                                    paddingVertical,
+                                    paddingHorizontal,
+                                    paddingVertical
+                            )
+                            val margin = (4 * resources.displayMetrics.density).toInt()
+                            layoutParams =
+                                    ViewGroup.MarginLayoutParams(
+                                                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                                                    ViewGroup.LayoutParams.WRAP_CONTENT
+                                            )
+                                            .apply { rightMargin = margin }
+                        }
                 binding.typesContainer.addView(typeTextView)
             }
 
             Glide.with(itemView.context)
-                .load(pokemon.sprites.frontDefault)
-                .placeholder(R.drawable.ic_pokeball) // Show pokeball while loading
-                .error(R.drawable.ic_pokeball) // Show pokeball if loading fails
-                .into(binding.pokemonImage)
+                    .load(pokemon.sprites?.frontDefault)
+                    .placeholder(R.drawable.ic_pokeball) // Show pokeball while loading
+                    .error(R.drawable.ic_pokeball) // Show pokeball if loading fails
+                    .into(binding.pokemonImage)
 
             itemView.setOnClickListener { pokemonClick(pokemon.id) }
         }
     }
 
-    class LoadingViewHolder(binding: ItemLoadingIndicatorBinding) : RecyclerView.ViewHolder(binding.root)
+    class LoadingViewHolder(binding: ItemLoadingIndicatorBinding) :
+            RecyclerView.ViewHolder(binding.root)
 }

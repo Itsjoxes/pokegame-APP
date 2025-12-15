@@ -22,7 +22,7 @@ class BattleSelectionAdapter(private val onBattleClick: (Pokemon) -> Unit) :
         fun bind(pokemon: Pokemon) {
             binding.pokemonName.text = pokemon.name.uppercase()
 
-            Glide.with(binding.root).load(pokemon.sprites.frontDefault).into(binding.pokemonImage)
+            Glide.with(binding.root).load(pokemon.sprites?.frontDefault).into(binding.pokemonImage)
 
             // Reuse types logic if possible, or just hide/show simple text
             binding.typesContainer.removeAllViews()

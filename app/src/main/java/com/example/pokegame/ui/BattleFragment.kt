@@ -51,7 +51,11 @@ class BattleFragment : Fragment() {
             return
         }
 
-        val repository = PokemonRepository(RetrofitClient.service)
+        val repository =
+                PokemonRepository(
+                        RetrofitClient.service,
+                        com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+                )
         val factory = BattleViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[BattleViewModel::class.java]
 
@@ -90,7 +94,7 @@ class BattleFragment : Fragment() {
             )
 
             Glide.with(this)
-                    .load(pokemon.sprites.backDefault ?: pokemon.sprites.frontDefault)
+                    .load(pokemon.sprites?.backDefault ?: pokemon.sprites?.frontDefault)
                     .into(binding.playerImage)
 
             // Set move names
@@ -115,7 +119,7 @@ class BattleFragment : Fragment() {
                     com.example.pokegame.util.TypeColorHelper.getColorForType(type)
             )
 
-            Glide.with(this).load(pokemon.sprites.frontDefault).into(binding.rivalImage)
+            Glide.with(this).load(pokemon.sprites?.frontDefault).into(binding.rivalImage)
         }
 
         viewModel.playerHp.observe(viewLifecycleOwner) { hp ->

@@ -88,7 +88,7 @@ class CaptureAdapter(private val onCaptureClick: (Pokemon) -> Unit) :
             }
 
             Glide.with(itemView.context)
-                    .load(pokemon.sprites.frontDefault)
+                    .load(pokemon.sprites?.frontDefault)
                     .placeholder(R.drawable.ic_pokeball) // Show pokeball while loading
                     .error(R.drawable.ic_pokeball) // Show pokeball if loading fails
                     .into(binding.pokemonImage)

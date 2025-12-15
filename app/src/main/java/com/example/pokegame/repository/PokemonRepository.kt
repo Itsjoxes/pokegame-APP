@@ -8,7 +8,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import retrofit2.HttpException
 
-class PokemonRepository(private val apiService: ApiService) {
+class PokemonRepository(
+        private val apiService: ApiService,
+        private val userService: com.example.pokegame.api.UserService
+) {
 
     // In-memory cache for Pokemon keyed by id to avoid relying on generated hashCode()
     private val pokemonCache = mutableMapOf<Int, Pokemon>()
@@ -69,18 +72,58 @@ class PokemonRepository(private val apiService: ApiService) {
     }
 
     suspend fun getSinglePokemonDetails(id: Int): Pokemon? {
+        Log.d("PokemonRepository", "Getting details for id: $id")
         return try {
             coroutineScope {
-                val pokemonInfoDeferred = async { apiService.getPokemonInfo(id) }
-                val speciesInfoDeferred = async { apiService.getPokemonSpecies(id) }
+                val pokemonInfoDeferred = async {
+                    try {
+                        apiService.getPokemonInfo(id)
+                    } catch (e: Exception) {
+                        Log.e("PokemonRepository", "Start info fail", e)
+                        throw e
+                    }
+                }
+                val speciesInfoDeferred = async {
+                    try {
+                        apiService.getPokemonSpecies(id)
+                    } catch (e: Exception) {
+                        Log.e("PokemonRepository", "Start species fail", e)
+                        throw e
+                    }
+                }
 
                 val pokemonInfo = pokemonInfoDeferred.await()
-                val speciesInfo = speciesInfoDeferred.await()
+                Log.d("PokemonRepository", "Got pokemon info for $id")
 
-                pokemonInfo.apply {
-                    isLegendary = speciesInfo.isLegendary
-                    isMythical = speciesInfo.isMythical
+                try {
+                    val speciesInfo = speciesInfoDeferred.await()
+                    Log.d("PokemonRepository", "Got species info for $id")
+                    pokemonInfo.apply {
+                        isLegendary = speciesInfo.isLegendary
+                        isMythical = speciesInfo.isMythical
+                        spanishFlavorTextEntries =
+                                speciesInfo.flavorTextEntries
+                                        .filter { it.language.name == "es" }
+                                        .map { it.flavorText }
+                    }
+                } catch (e: Exception) {
+                    Log.w(
+                            "PokemonRepository",
+                            "Failed to get species info, continuing only with pokemon info",
+                            e
+                    )
+                    // Allow continuing without species info if that fails (it's secondary)
                 }
+
+                // POPULATE LOCAL CAPTURE LOCATION IF AVAILABLE
+                val location =
+                        com.example.pokegame.util.CapturedPokemonManager.getCaptureLocation(id)
+                if (location != null) {
+                    pokemonInfo.latitude = location.first
+                    pokemonInfo.longitude = location.second
+                }
+
+                pokemonInfo
             }
         } catch (e: Exception) {
             Log.e("PokemonRepository", "Error getting single pokemon details for id=$id", e)
@@ -97,44 +140,46 @@ class PokemonRepository(private val apiService: ApiService) {
             emptyList()
         }
     }
+
     suspend fun capturePokemon(username: String, pokemon: Pokemon): Pokemon? {
         return try {
             // Ensure urlImagen is set before sending
             if (pokemon.urlImagen == null) {
-                pokemon.urlImagen = pokemon.sprites.frontDefault
+                pokemon.urlImagen = pokemon.sprites?.frontDefault
             }
 
-            // We need a UserService instance.
-            // Since PokemonRepository currently only has ApiService, we might need to refactor or
-            // pass UserService.
-            // However, checking the codebase, there is a UserRetrofitClient.
-            // For now, let's assume we can access it or the user should pass the service.
-            // Wait, the plan didn't specify refactoring the Repository constructor.
-            // Let's check if we can use UserRetrofitClient directly or if we should add it to the
-            // constructor.
-            // Given the context, it's cleaner to add it to the constructor or use a singleton if
-            // available.
-            // But to avoid breaking changes in other files, let's use UserRetrofitClient.service
-            // directly here if possible,
-            // or better, just add the method and let the ViewModel handle the service call?
-            // No, the repository should handle data operations.
-
-            // Let's use UserRetrofitClient.service directly for now to minimize impact,
-            // or better yet, just add the function and call the service.
-            val response =
-                    com.example.pokegame.api.UserRetrofitClient.service?.capturePokemon(
-                            username,
-                            pokemon
-                    )
-            if (response != null && response.isSuccessful) {
+            val response = userService.capturePokemon(username, pokemon)
+            if (response.isSuccessful) {
                 response.body()
             } else {
-                Log.e("PokemonRepository", "Error capturing pokemon: ${response?.code()}")
+                Log.e("PokemonRepository", "Error capturing pokemon: ${response.code()}")
                 null
             }
         } catch (e: Exception) {
             Log.e("PokemonRepository", "Error capturing pokemon", e)
             null
+        }
+    }
+
+    suspend fun getCapturedPokemons(username: String): List<Pokemon> {
+        Log.d("PokemonRepository", "Requesting captured pokemons for user: $username")
+        return try {
+            val response = userService.getCapturedPokemons(username)
+            Log.d("PokemonRepository", "Response code: ${response.code()}")
+            if (response.isSuccessful) {
+                val list = response.body() ?: emptyList()
+                Log.d("PokemonRepository", "Found ${list.size} captured pokemons")
+                list
+            } else {
+                Log.e(
+                        "PokemonRepository",
+                        "Error getting captured pokemons: ${response.code()} ${response.errorBody()?.string()}"
+                )
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("PokemonRepository", "Error getting captured pokemons", e)
+            emptyList()
         }
     }
 }

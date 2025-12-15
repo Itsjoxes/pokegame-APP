@@ -8,7 +8,10 @@ import com.example.pokegame.api.Pokemon
 import com.example.pokegame.repository.PokemonRepository
 import kotlinx.coroutines.launch
 
-class CaptureViewModel(private val repository: PokemonRepository) : ViewModel() {
+class CaptureViewModel(
+        private val repository: PokemonRepository,
+        private val sessionManager: com.example.pokegame.util.SessionManager
+) : ViewModel() {
 
     private val _wildPokemon = MutableLiveData<List<Pokemon>>()
     val wildPokemon: LiveData<List<Pokemon>> = _wildPokemon
@@ -40,6 +43,12 @@ class CaptureViewModel(private val repository: PokemonRepository) : ViewModel() 
 
         if (captured) {
             com.example.pokegame.util.CapturedPokemonManager.addCaptured(pokemon.id)
+
+            // Sync with backend
+            val username = sessionManager.getUsername()
+            if (username != null) {
+                viewModelScope.launch { repository.capturePokemon(username, pokemon) }
+            }
         }
 
         // Remove the Pokemon from the list whether it was captured or not

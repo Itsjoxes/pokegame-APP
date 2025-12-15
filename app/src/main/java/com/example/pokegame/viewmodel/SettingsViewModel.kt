@@ -9,7 +9,8 @@ import com.bumptech.glide.Glide
 import com.example.pokegame.repository.PokemonRepository
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(application: Application, private val repository: PokemonRepository) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application, private val repository: PokemonRepository) :
+        AndroidViewModel(application) {
 
     private val _downloadProgress = MutableLiveData<Int>(0)
     val downloadProgress: LiveData<Int> = _downloadProgress
@@ -46,24 +47,27 @@ class SettingsViewModel(application: Application, private val repository: Pokemo
 
             pokemonResultList.forEach { pokeResult ->
                 val id = pokeResult.url.split("/").dropLast(1).last().toInt()
-                
+
                 _downloadStatus.postValue("Preparando a ${pokeResult.name.uppercase()}...")
                 val pokemonDetails = repository.getSinglePokemonDetails(id)
 
                 if (pokemonDetails != null) {
                     try {
                         Glide.with(getApplication<Application>().applicationContext)
-                            .downloadOnly()
-                            .load(pokemonDetails.sprites.frontDefault)
-                            .submit()
-                        
+                                .downloadOnly()
+                                .load(pokemonDetails.sprites?.frontDefault)
+                                .submit()
+
                         downloadedCount++
                         val progress = (downloadedCount * 100 / totalPokemon)
                         _downloadProgress.postValue(progress)
-                        _downloadStatus.postValue("Descargado: ${pokemonDetails.name.uppercase()} ($downloadedCount/$totalPokemon)")
-
+                        _downloadStatus.postValue(
+                                "Descargado: ${pokemonDetails.name.uppercase()} ($downloadedCount/$totalPokemon)"
+                        )
                     } catch (e: Exception) {
-                        _downloadStatus.postValue("Error al descargar ${pokemonDetails.name.uppercase()}")
+                        _downloadStatus.postValue(
+                                "Error al descargar ${pokemonDetails.name.uppercase()}"
+                        )
                     }
                 } else {
                     _downloadStatus.postValue("Error en detalles de ${pokeResult.name.uppercase()}")

@@ -9,7 +9,10 @@ import com.example.pokegame.api.Pokemon
 import com.example.pokegame.repository.PokemonRepository
 import kotlinx.coroutines.launch
 
-class PokeListViewModel(private val repository: PokemonRepository) : ViewModel() {
+class PokeListViewModel(
+        private val repository: PokemonRepository,
+        private val sessionManager: com.example.pokegame.util.SessionManager
+) : ViewModel() {
 
     private val _pokemonList = MutableLiveData<List<Pokemon>>(emptyList())
     private val _isLoading = MutableLiveData(false)
@@ -32,20 +35,54 @@ class PokeListViewModel(private val repository: PokemonRepository) : ViewModel()
         _isLoading.value = true
 
         viewModelScope.launch {
-            // Load ONLY captured pokemons
-            val capturedIds =
-                    com.example.pokegame.util.CapturedPokemonManager.getCapturedIds().map {
-                        it.toInt()
+            // Priority 1: Load from Local Storage (Offline-ish capability) to satisfy "my captured
+            // pokemons"
+            val localIdsStrings = com.example.pokegame.util.CapturedPokemonManager.getCapturedIds()
+            val localIds = localIdsStrings.mapNotNull { it.toIntOrNull() }
+
+            android.util.Log.d("PokeListViewModel", "Local captured IDs: $localIds")
+
+            // Fetch details for these IDs using PokeAPI (repository handles caching potentially)
+            val uniqueLocalPokemon =
+                    if (localIds.isNotEmpty()) {
+                        repository.getPokemonListByIds(localIds)
+                    } else {
+                        emptyList()
                     }
 
-            if (capturedIds.isEmpty()) {
-                _pokemonList.value = emptyList()
-                _isLoading.value = false
-                return@launch
+            // Priority 2: Try Backend (Sync)
+            val username = sessionManager.getUsername()
+            var backendPokemon: List<Pokemon> = emptyList()
+            if (username != null) {
+                try {
+                    val rawBackend = repository.getCapturedPokemons(username)
+
+                    // Healing corrupt data (null names)
+                    val corruptIds = rawBackend.filter { it.name == null }.map { it.id }
+                    if (corruptIds.isNotEmpty()) {
+                        android.util.Log.d(
+                                "PokeListViewModel",
+                                "Repairing ${corruptIds.size} corrupted backend pokemons"
+                        )
+                        val repaired = repository.getPokemonListByIds(corruptIds)
+
+                        backendPokemon =
+                                rawBackend.map { original ->
+                                    repaired.find { it.id == original.id } ?: original
+                                }
+                    } else {
+                        backendPokemon = rawBackend
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("PokeListViewModel", "Failed to fetch backend captures", e)
+                }
             }
 
-            val newPokemon = repository.getPokemonListByIds(capturedIds)
-            _pokemonList.value = newPokemon
+            // Combine lists (Deduplicate by ID)
+            val combined = (uniqueLocalPokemon + backendPokemon).distinctBy { it.id }
+
+            android.util.Log.d("PokeListViewModel", "Total unique pokemons: ${combined.size}")
+            _pokemonList.value = combined
             _isLoading.value = false
         }
     }

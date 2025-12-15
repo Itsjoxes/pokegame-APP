@@ -16,7 +16,7 @@ class SessionManagerTest {
     private val editor = mockk<SharedPreferences.Editor>(relaxed = true)
 
     @Test
-    fun `saveAuthToken saves token to shared preferences`() {
+    fun `saveToken saves token to shared preferences`() {
         // Given
         every { context.getSharedPreferences(any(), any()) } returns sharedPrefs
         every { sharedPrefs.edit() } returns editor
@@ -25,7 +25,7 @@ class SessionManagerTest {
         val sessionManager = SessionManager(context)
 
         // When
-        sessionManager.saveAuthToken("test_token")
+        sessionManager.saveToken("test_token")
 
         // Then
         verify { editor.putString("auth_token", "test_token") }

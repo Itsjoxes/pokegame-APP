@@ -131,13 +131,17 @@ class PokemonDetailFragment : Fragment(), SensorEventListener {
 
     private fun loadPokemon(id: Int) {
         progress.visibility = View.VISIBLE
-        val repository = PokemonRepository(RetrofitClient.service)
+        val repository =
+                PokemonRepository(
+                        RetrofitClient.service,
+                        com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+                )
         lifecycleScope.launch {
             try {
                 val pokemon = repository.getSinglePokemonDetails(id)
                 if (pokemon != null) {
                     // Name
-                    nameView.text = pokemon.name.uppercase()
+                    nameView.text = (pokemon.name ?: "Desconocido").uppercase()
 
                     // Types
                     val typesText =
@@ -148,13 +152,16 @@ class PokemonDetailFragment : Fragment(), SensorEventListener {
                                     ?: "—"
                     typesView.text = "Tipo: $typesText"
 
-                    // Misc (legendary/mythical)
-                    miscView.text =
-                            when {
-                                pokemon.isLegendary -> "Legendario"
-                                pokemon.isMythical -> "Mítico"
-                                else -> ""
-                            }
+                    // Misc (legendary/mythical/location)
+                    val miscText = StringBuilder()
+                    if (pokemon.isLegendary) miscText.append("Legendario ")
+                    if (pokemon.isMythical) miscText.append("Mítico ")
+
+                    if (pokemon.latitude != null && pokemon.longitude != null) {
+                        if (miscText.isNotEmpty()) miscText.append("\n")
+                        miscText.append("Capturado en: ${pokemon.latitude}, ${pokemon.longitude}")
+                    }
+                    miscView.text = miscText.toString()
 
                     // Flavor text (prefer Spanish)
                     val flavorText =
@@ -178,7 +185,7 @@ class PokemonDetailFragment : Fragment(), SensorEventListener {
                     statsView.text = statsText
 
                     // Image
-                    val imageUrl = pokemon.sprites.frontDefault ?: ""
+                    val imageUrl = pokemon.sprites?.frontDefault ?: ""
                     Glide.with(requireContext())
                             .load(imageUrl)
                             .placeholder(R.drawable.ic_pokeball)
@@ -216,7 +223,11 @@ class PokemonDetailFragment : Fragment(), SensorEventListener {
     }
 
     private fun savePokemonToCloud(pokemon: com.example.pokegame.api.Pokemon, username: String) {
-        val repository = PokemonRepository(RetrofitClient.service)
+        val repository =
+                PokemonRepository(
+                        RetrofitClient.service,
+                        com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+                )
         lifecycleScope.launch {
             Toast.makeText(context, "Guardando...", Toast.LENGTH_SHORT).show()
             val saved = repository.capturePokemon(username, pokemon)

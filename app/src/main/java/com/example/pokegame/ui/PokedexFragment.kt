@@ -39,7 +39,8 @@ class PokedexFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val repository = PokemonRepository(RetrofitClient.service)
+        val userService = com.example.pokegame.api.UserRetrofitClient.getInstance(requireContext())
+        val repository = PokemonRepository(RetrofitClient.service, userService)
         val factory = BattleSelectionViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[BattleSelectionViewModel::class.java]
 

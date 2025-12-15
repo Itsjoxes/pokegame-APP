@@ -6,6 +6,10 @@
             app:key="account_action"
             app:title="Iniciar Sesión"
             app:summary="Inicia sesión o regístrate para guardar tu progreso." />
+        <Preference
+            app:key="profile_picture"
+            app:title="Foto de Perfil"
+            app:summary="Toma una foto para tu perfil." />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Recursos">

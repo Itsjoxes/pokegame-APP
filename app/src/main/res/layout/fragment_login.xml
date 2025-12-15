@@ -125,6 +125,17 @@
             <!-- Eye icon could be added here as a drawableEnd or separate ImageView -->
         </FrameLayout>
 
+        <TextView
+            android:id="@+id/tvChangePassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cambiar contraseña"
+            android:textColor="#00AEEF"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/flPassword"/>
+
         <!-- Confirm Password Field (Register only) -->
         <TextView
             android:id="@+id/tvConfirmPassword"

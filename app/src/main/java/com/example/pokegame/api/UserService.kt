@@ -22,4 +22,7 @@ interface UserService {
 
     @GET("usuarios/{username}/pokemons")
     suspend fun getCapturedPokemons(@Path("username") username: String): Response<List<Pokemon>>
+
+    @retrofit2.http.PUT("usuarios")
+    suspend fun updateUsuario(@Body usuario: Usuario): Response<Usuario>
 }
