@@ -51,6 +51,7 @@ class CaptureViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // Prueba para verificar si el metodo attemptCapture retorna false cuando no hay pokeballs
     @Test
     fun `attemptCapture returns false when no pokeballs`() {
         val pokemon = Pokemon(

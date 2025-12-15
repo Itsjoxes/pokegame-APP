@@ -42,6 +42,7 @@ class PokeListViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // Prueba para verificar si el metodo loadNextPage carga los pokemons capturados cuando el usuario esta logueado
     @Test
     fun `loadNextPage loads captured pokemons when user is logged in`() {
         // Given

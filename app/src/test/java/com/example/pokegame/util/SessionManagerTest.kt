@@ -15,6 +15,7 @@ class SessionManagerTest {
     private val sharedPrefs = mockk<SharedPreferences>(relaxed = true)
     private val editor = mockk<SharedPreferences.Editor>(relaxed = true)
 
+    // Prueba para verificar si el metodo saveToken guarda el token en shared preferences
     @Test
     fun `saveToken saves token to shared preferences`() {
         // Given

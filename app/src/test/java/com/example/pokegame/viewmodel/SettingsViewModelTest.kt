@@ -38,6 +38,8 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // Prueba para verificar si el metodo startSpriteDownload actualiza el estado a downloading
+
     @Test
     fun `startSpriteDownload updates status to downloading`() {
         // Given
